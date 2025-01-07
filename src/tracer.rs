@@ -1,4 +1,4 @@
-use async_nats::Client as NatsClient;
+use async_nats::Connection as NatsClient;
 use chrono::Utc;
 use serde::Serialize;
 use std::sync::Arc;
@@ -67,7 +67,7 @@ impl Tracer {
         );
 
         self.nats_client
-            .publish(self.topic.clone(), formatted_message.into_bytes().into())
+            .publish(&self.topic.clone(), formatted_message.into_bytes())
             .await?;
 
         Ok(())
