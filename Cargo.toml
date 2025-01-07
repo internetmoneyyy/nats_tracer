@@ -1,0 +1,22 @@
+[package]
+name = "nats-tracer"
+version = "0.1.0"
+edition = "2021"
+description = "A global tracer for logging to NATS"
+license = "MIT"
+authors = ["INTERNETMONEYYYY <internetmoneyyyy@gmail.com>"]
+
+[dependencies]
+async-nats = "0.33"
+anyhow = "1.0"
+chrono = "0.4"
+serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1.0", features = ["full"] }
+
+[lib]
+name = "nats_tracer"
+path = "src/lib.rs"
+
+[[bin]]
+name = "basic_usage"
+path = "src/basic_usage.rs"

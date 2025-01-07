@@ -1,0 +1,75 @@
+use async_nats::Client as NatsClient;
+use chrono::Utc;
+use serde::Serialize;
+use std::sync::Arc;
+use tokio::sync::OnceCell;
+
+#[derive(Debug, Serialize, Clone)]
+pub struct LogMessage {
+    pub timestamp: String,
+    pub level: LogLevel,
+    pub module: String,
+    pub message: String,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub enum LogLevel {
+    INFO,
+    WARN,
+    ERROR,
+    DEBUG,
+}
+
+impl std::fmt::Display for LogLevel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LogLevel::INFO => write!(f, "INFO"),
+            LogLevel::WARN => write!(f, "WARN"),
+            LogLevel::ERROR => write!(f, "ERROR"),
+            LogLevel::DEBUG => write!(f, "DEBUG"),
+        }
+    }
+}
+
+static TRACER: OnceCell<Tracer> = OnceCell::const_new();
+
+pub struct Tracer {
+    nats_client: Arc<NatsClient>,
+    topic: String,
+}
+
+impl Tracer {
+    pub fn new(nats_client: Arc<NatsClient>, topic: String) -> Self {
+        Self { nats_client, topic }
+    }
+
+    pub async fn init(nats_client: Arc<NatsClient>, topic: String) {
+        if TRACER.set(Tracer::new(nats_client, topic)).is_err() {
+            panic!("Global tracer was already initialized");
+        }
+    }
+
+    pub fn global() -> &'static Tracer {
+        TRACER.get().expect("Tracer not initialized")
+    }
+
+    pub async fn log(&self, level: LogLevel, message: &str) -> Result<(), anyhow::Error> {
+        let log = LogMessage {
+            timestamp: Utc::now().format("[%Y-%m-%d][%H:%M:%S]").to_string(),
+            level,
+            module: module_path!().to_string(),
+            message: message.to_string(),
+        };
+
+        let formatted_message = format!(
+            "{}[{}][{}] {}",
+            log.timestamp, log.module, log.level, log.message
+        );
+
+        self.nats_client
+            .publish(self.topic.clone(), formatted_message.into_bytes().into())
+            .await?;
+
+        Ok(())
+    }
+}
