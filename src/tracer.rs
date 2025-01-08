@@ -53,11 +53,16 @@ impl Tracer {
         TRACER.get().expect("Tracer not initialized")
     }
 
-    pub async fn log(&self, level: LogLevel, message: &str) -> Result<(), anyhow::Error> {
+    pub async fn log(
+        &self,
+        level: LogLevel,
+        message: &str,
+        module: &str,
+    ) -> Result<(), anyhow::Error> {
         let log = LogMessage {
             timestamp: Utc::now().format("[%Y-%m-%d][%H:%M:%S]").to_string(),
             level,
-            module: module_path!().to_string(),
+            module: module.to_string(),
             message: message.to_string(),
         };
 
