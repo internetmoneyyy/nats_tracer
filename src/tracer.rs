@@ -6,9 +6,6 @@ use tokio::sync::OnceCell;
 
 #[derive(Debug, Serialize, Clone)]
 pub struct LogMessage {
-    pub timestamp: String,
-    pub level: LogLevel,
-    pub module: String,
     pub message: String,
 }
 
@@ -60,16 +57,10 @@ impl Tracer {
         module: &str,
     ) -> Result<(), anyhow::Error> {
         let log = LogMessage {
-            timestamp: Utc::now().format("[%Y-%m-%d][%H:%M:%S]").to_string(),
-            level,
-            module: module.to_string(),
             message: message.to_string(),
         };
 
-        let formatted_message = format!(
-            "{}[{}][{}] {}",
-            log.timestamp, log.module, log.level, log.message
-        );
+        let formatted_message = format!("{}", log.message);
 
         self.nats_client
             .publish(&self.topic.clone(), formatted_message.into_bytes())
